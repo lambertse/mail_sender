@@ -1,4 +1,4 @@
-package handler
+package handlers
 
 import (
 	"fmt"
@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/lambertse/cquan_go_webapp/internal/model"
 )
@@ -66,24 +65,20 @@ func (h *FileHandler) SaveFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func storeFile(file multipart.File) (string, error) {
-	if err := os.MkdirAll("uploads", os.ModePerm); err != nil {
-		return "", fmt.Errorf("Error creating uploads directory: %v", err)
-	}
+    // Store into /tmp/template-file.xlsx
+    // tempDir := os.TempDir() 
+    tempDir := "/tmp/"
+    filePath := filepath.Join(tempDir, "template-file.xlsx")
+    outFile, err := os.Create(filePath)
+    if err != nil {
+        return "", fmt.Errorf("failed to create file: %v", err)
+    }
+    defer outFile.Close()
 
-	filename := fmt.Sprintf("%d", time.Now().UnixNano())
-	filepath := filepath.Join("uploads", filename)
-
-	// Create destination file
-	dst, err := os.Create(filepath)
-	if err != nil {
-		return "", fmt.Errorf("Error creating file: %v", err)
-	}
-	defer dst.Close()
-
-	// Copy uploaded file
-	if _, err := io.Copy(dst, file); err != nil {
-		return "", fmt.Errorf("Error saving file: %v", err)
-	}
-	return filepath, nil
+    _, err = io.Copy(outFile, file)
+    if err != nil {
+        return "", fmt.Errorf("failed to save file: %v", err)
+    }
+    return filePath, nil
 }
 

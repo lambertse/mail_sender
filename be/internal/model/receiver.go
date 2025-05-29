@@ -7,6 +7,7 @@ import (
 )
 
 type Receiver struct {
+  ID    string    `json:"id"`
   Name  string `json:"name"`
   Owner string `json:"owner"`
   Email string `json:"email"`
@@ -14,6 +15,7 @@ type Receiver struct {
 }
 
 func (m *Receiver) PrintReceiver() {
+  fmt.Println("ID:", m.ID)
   fmt.Println("Name:", m.Name)
   fmt.Println("Owner:", m.Owner)
   fmt.Println("Email:", m.Email)
@@ -52,8 +54,10 @@ func GetReceiverFromSource(filepath string) ([]*Receiver, error) {
 		return nil, err
 	}
 	var receivers []*Receiver
-	for _, row := range rows {
+	for idx, row := range rows {
 		var receiver Receiver
+        // Print index 
+        receiver.ID = fmt.Sprintf("%d", idx+1)
 		receiver.Name = row[0]
 		receiver.Owner = row[1]
 		receiver.Email = row[2]
@@ -65,7 +69,7 @@ func GetReceiverFromSource(filepath string) ([]*Receiver, error) {
 }
 
 func (m *Receiver) GetReceiverAsJSON() string {
-  return fmt.Sprintf(`{"name": "%s", "owner": "%s", "email": "%s", "tax_id": "%s"}`, m.Name, m.Owner, m.Email, m.TaxID)
+    return fmt.Sprintf(`{"id": "%s", "name": "%s", "owner": "%s", "email": "%s", "tax_id": "%s"}`, m.ID, m.Name, m.Owner, m.Email, m.TaxID)
 }
 
 func EncodeReceiversToJSON(receivers []*Receiver) string {

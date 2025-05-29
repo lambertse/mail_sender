@@ -1,9 +1,25 @@
-# CQUAN PROjECT WEB APP
+# cquan_mail_sender
 
+A web application for sending emails, featuring a Go backend and a React frontend.
 
-# Packages
+## Technologies Used
 
-- Using [https://github.com/joho/godotenv] for loading environment variables from a `.env` file.
-- Using [https://github.com/go-sql-driver/mysql] for MySQL database connection.
-- Using [https://golang.org/x/crypto/bcrypt] for password hashing.
--
+### Backend
+- Go (Golang)
+- net/http (standard library)
+- Environment variable management (.env)
+- Go modules
+
+### Frontend
+- React
+- Vite
+- JavaScript (ES6+)
+- CSS
+
+### Tooling & Scripts
+- Node.js & npm
+- Shell scripting (`run.sh`)
+
+### Setup:
+
+- https://myaccount.google.com/apppasswords 

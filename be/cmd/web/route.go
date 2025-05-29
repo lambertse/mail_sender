@@ -13,11 +13,14 @@ func route() http.Handler {
 
   fileHanlder := handler.NewFileHandler()
   sendMailHander := handler.NewSendMailHandler()
+  emailConfigHandler := handler.NewEmailConfigHandler()
 
   // Create Handler
   mux.Use(middleware.CORS)
   mux.Post("/upload_file", fileHanlder.SaveFile)
   mux.Post("/send_email", sendMailHander.SendEmail)
+  mux.Post("/email-config", emailConfigHandler.SaveEmailConfig)
+  mux.Get("/email-config", emailConfigHandler.GetEmailConfig)
 
   //
 
