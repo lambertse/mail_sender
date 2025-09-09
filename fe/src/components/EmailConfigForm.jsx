@@ -156,7 +156,6 @@ const EmailConfigForm = ({ onSubmit, onClose, initialData }) => {
 
         <form onSubmit={handleSubmit} className="email-config-form">
           <div className="form-section">
-            <h3>Email Template</h3>
             <div className="form-group">
               <label>Subject:</label>
               <input

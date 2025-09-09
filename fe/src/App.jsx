@@ -221,7 +221,7 @@ function App() {
   return (
     <div className="app-container">
       <div>
-        <h1>File Processing Demo</h1>
+        <h1>Mail sender</h1>
         <div className="upload-container">
           <input
             type="file"
