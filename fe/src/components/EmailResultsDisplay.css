@@ -1,0 +1,80 @@
+.mail-results-container {
+  margin-top: 30px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.mail-results-container h3 {
+  margin-top: 0;
+  color: #333;
+  text-align: center;
+}
+
+.mail-results-actions {
+  margin-top: 25px;
+  text-align: center;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.retry-button {
+  background-color: #FF9800;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.retry-button:hover {
+  background-color: #F57C00;
+}
+
+.retry-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.cancel-retry-button {
+  background-color: #f44336;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.cancel-retry-button:hover {
+  background-color: #d32f2f;
+}
+
+.cancel-retry-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.back-to-main-button {
+  background-color: #607D8B;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.back-to-main-button:hover {
+  background-color: #455A64;
+}
