@@ -96,7 +96,7 @@ func (h *SendMailHandler) SendEmail(w http.ResponseWriter, r *http.Request) {
 }
 
 func addAttachmentsToMessage(m *mail.Message, attachments []model.Attachment) error {
-	const attachmentDir = "/tmp/email_configs/email_attachments"
+	var attachmentDir = filepath.Join(os.TempDir(), "email_configs", "email_attachments")
 
 	for _, attachment := range attachments {
 		attachmentPath := filepath.Join(attachmentDir, attachment.Name)

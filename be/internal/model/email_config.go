@@ -24,9 +24,9 @@ type Attachment struct {
 	Data string `json:"data"`
 }
 
-const configDir = "/tmp/email_configs"
-const configFileName = "standard_email.json"   
-const attachmentDir = "/tmp/email_configs/email_attachments"
+var configDir = filepath.Join(os.TempDir(), "email_configs")
+var configFileName = "standard_email.json"
+var attachmentDir = filepath.Join(os.TempDir(), "email_configs", "email_attachments")
 
 func (e *EmailConfig) PrintEmailConfig() {
 	fmt.Println("Subject:", e.Subject)
@@ -40,28 +40,27 @@ func parseDataURL(dataURL string) ([]byte, error) {
 	if !strings.HasPrefix(dataURL, "data:") {
 		return nil, fmt.Errorf("invalid data URL format")
 	}
-	
+
 	// Find the comma that separates the header from the data
 	commaIndex := strings.Index(dataURL, ",")
 	if commaIndex == -1 {
 		return nil, fmt.Errorf("invalid data URL format: missing comma")
 	}
-	
+
 	// Extract the base64 data part
 	base64Data := dataURL[commaIndex+1:]
-	
+
 	// Decode base64
 	return base64.StdEncoding.DecodeString(base64Data)
 }
 
-
 func SaveEmailConfig(config *EmailConfig) error {
-    // Remove the configDir if it exists to ensure only one config is stored
-    if _, err := os.Stat(configDir); err == nil {
-        if err := os.RemoveAll(configDir); err != nil {
-            return fmt.Errorf("failed to remove existing config directory: %w", err)
-        }
-    }
+	// Remove the configDir if it exists to ensure only one config is stored
+	if _, err := os.Stat(configDir); err == nil {
+		if err := os.RemoveAll(configDir); err != nil {
+			return fmt.Errorf("failed to remove existing config directory: %w", err)
+		}
+	}
 
 	// Create directory if it doesn't exist
 	if err := os.MkdirAll(configDir, 0755); err != nil {
@@ -69,7 +68,7 @@ func SaveEmailConfig(config *EmailConfig) error {
 	}
 
 	// Set creation timestamp
-	config.CreatedAt = time.Now()	
+	config.CreatedAt = time.Now()
 	path := filepath.Join(configDir, configFileName)
 
 	// Save main config file
@@ -83,7 +82,7 @@ func SaveEmailConfig(config *EmailConfig) error {
 	}
 
 	// Save attachments as separate files if they exist
-    if len(config.Attachments) > 0 {
+	if len(config.Attachments) > 0 {
 		if err := os.MkdirAll(attachmentDir, 0755); err != nil {
 			fmt.Printf("Warning: Failed to create attachment directory: %v\n", err)
 		} else {
@@ -100,7 +99,6 @@ func SaveEmailConfig(config *EmailConfig) error {
 			}
 		}
 	}
-	
 
 	return nil
 }

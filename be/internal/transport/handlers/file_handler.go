@@ -12,7 +12,6 @@ import (
 	"github.com/lambertse/cquan_go_webapp/internal/model"
 )
 
-
 type FileHandler struct {
 }
 
@@ -65,20 +64,17 @@ func (h *FileHandler) SaveFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func storeFile(file multipart.File) (string, error) {
-    // Store into /tmp/template-file.xlsx
-    // tempDir := os.TempDir() 
-    tempDir := "/tmp/"
-    filePath := filepath.Join(tempDir, "template-file.xlsx")
-    outFile, err := os.Create(filePath)
-    if err != nil {
-        return "", fmt.Errorf("failed to create file: %v", err)
-    }
-    defer outFile.Close()
+	tempDir := os.TempDir()
+	filePath := filepath.Join(tempDir, "template-file.xlsx")
+	outFile, err := os.Create(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to create file: %v", err)
+	}
+	defer outFile.Close()
 
-    _, err = io.Copy(outFile, file)
-    if err != nil {
-        return "", fmt.Errorf("failed to save file: %v", err)
-    }
-    return filePath, nil
+	_, err = io.Copy(outFile, file)
+	if err != nil {
+		return "", fmt.Errorf("failed to save file: %v", err)
+	}
+	return filePath, nil
 }
-

@@ -4,11 +4,11 @@ set -e
 mkdir -p "build/"
 
 # Build the Go server
-# cd be/
-# echo "Building server"
-# go build -o ../build/server ./cmd/web/* 
-# echo "Build complete!"
-# cd ..
+cd be/
+echo "Building server"
+go build -o ../build/server ./cmd/web/* 
+echo "Build complete!"
+cd ..
 
 # Build the React server
 cd fe/
