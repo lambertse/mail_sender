@@ -35,8 +35,18 @@ type MailResponse struct {
 }
 
 func (h *SendMailHandler) SendEmail(w http.ResponseWriter, r *http.Request) {
-	from := os.Getenv("MAIL_ADDR")
-	mailToken := os.Getenv("MAIL_TOKEN")
+    userClaims, err := GetUserFromRequest(r)
+	if err != nil {
+		log.Printf("Error extracting user from token: %v", err)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	
+	from := userClaims.Username
+	mailToken := userClaims.MailToken	
+    fmt.Printf("Using email: %s\n", from)
+    fmt.Printf("Using mail token: %s\n", mailToken)
+
 	if from == "" || mailToken == "" {
 		fmt.Errorf("missing environment variables GMAIL_ADDRESS or MAIL_TOKEN")
 		http.Error(w, "Internal Server Error: Missing email configuration", http.StatusInternalServerError)
@@ -55,29 +65,34 @@ func (h *SendMailHandler) SendEmail(w http.ResponseWriter, r *http.Request) {
 	var failedReceivers []model.Receiver
 
 	for _, receiver := range mailReq.Data {
-		// err := sendEmail(from, mailToken, &receiver)
-		// if err != nil {
-		// 	retryCount := 0
-		// 	for retryCount < sendMailRetryCount {
-		// 		log.Printf("Retrying to send email to %s, attempt %d", receiver.Email, retryCount+1)
-		// 		err = sendEmail(from, mailToken, &receiver)
-		// 		if err == nil {
-		// 			log.Printf("Email sent successfully to %s", receiver.Email)
-		// 			break
-		// 		}
-		// 		retryCount++
-		// 	}
-		// 	if retryCount == sendMailRetryCount {
-		// 		log.Printf("Failed to send email to %s after %d attempts: %v", receiver.Email, sendMailRetryCount, err)
-		// 		failedReceivers = append(failedReceivers, receiver)
-		// 		continue
-		// 	}
-		// }
-		// if err == nil {
-		// 	log.Printf("Email sent successfully to %s", receiver.Email)
-		// 	successReceivers = append(successReceivers, receiver)
-		// }
-		failedReceivers = append(failedReceivers, receiver) // Debug
+		err := sendEmail(from, mailToken, &receiver)
+		if err != nil {
+            fmt.Println("Error: ", err.Error())
+           if strings.Contains(err.Error(), "Username and Password not accepted") {
+                log.Printf("Authentication error: %v", err)
+                http.Error(w, "Authentication error: Invalid email or mail token", http.StatusForbidden)
+                return
+           } 
+			retryCount := 0
+			for retryCount < sendMailRetryCount {
+				log.Printf("Retrying to send email to %s, attempt %d", receiver.Email, retryCount+1)
+				err = sendEmail(from, mailToken, &receiver)
+				if err == nil {
+					log.Printf("Email sent successfully to %s", receiver.Email)
+					break
+				}
+				retryCount++
+			}
+			if retryCount == sendMailRetryCount {
+				log.Printf("Failed to send email to %s after %d attempts: %v", receiver.Email, sendMailRetryCount, err)
+				failedReceivers = append(failedReceivers, receiver)
+				continue
+			}
+		}
+		if err == nil {
+			log.Printf("Email sent successfully to %s", receiver.Email)
+			successReceivers = append(successReceivers, receiver)
+		}
 	}
 
 	// Prepare response

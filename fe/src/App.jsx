@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import Login from './components/Login'
+import Header from './components/Header'
 import EmailConfigForm from './components/EmailConfigForm'
 import FileUploadSection from './components/FileUploadSection'
 import FileProcessor from './components/FileProcessor'
@@ -6,6 +8,9 @@ import EmailResultsDisplay from './components/EmailResultsDisplay'
 import './App.css'
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [user, setUser] = useState(null)
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [selectedFile, setSelectedFile] = useState(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [isSendingMail, setIsSendingMail] = useState(false)
@@ -20,6 +25,45 @@ function App() {
 
   const CURRENT_USER = 'tri-le_opswat'
   const CURRENT_TIMESTAMP = '2025-05-29 17:41:26'
+
+  // Check authentication on app load
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('authToken')
+      const userInfo = localStorage.getItem('userInfo')
+      
+      if (token && userInfo) {
+        try {
+          const parsedUser = JSON.parse(userInfo)
+          setUser(parsedUser)
+          setIsAuthenticated(true)
+        } catch (error) {
+          console.error('Error parsing user info:', error)
+          handleLogout()
+        }
+      }
+      setIsCheckingAuth(false)
+    }
+    
+    checkAuth()
+  }, [])
+
+  const handleLogin = (userData) => {
+    setUser(userData)
+    setIsAuthenticated(true)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('authToken')
+    localStorage.removeItem('userInfo')
+    setUser(null)
+    setIsAuthenticated(false)
+    // Reset all app state on logout
+    setSelectedFile(null)
+    setProcessResult(null)
+    setUserData(null)
+    setShowEmailForm(false)
+  }
 
   const handleFileChange = (event) => {
     const file = event.target.files[0]
@@ -60,12 +104,20 @@ function App() {
     formData.append('timestamp', CURRENT_TIMESTAMP)
 
     try {
+            console.log('authen token:', localStorage.getItem('authToken'))
       const response = await fetch('http://localhost:8089/upload_file', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
         body: formData,
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          handleLogout()
+          return
+        }
         throw new Error(`Upload failed: ${response.statusText}`)
       }
 
@@ -101,11 +153,16 @@ function App() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         },
         body: JSON.stringify(requestBody)
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          handleLogout()
+          return
+        }
         throw new Error(`Failed to send mail: ${response.statusText}`)
       }
 
@@ -162,11 +219,16 @@ function App() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         },
         body: JSON.stringify(requestBody)
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          handleLogout()
+          return
+        }
         throw new Error(`Failed to retry sending mail: ${response.statusText}`)
       }
 
@@ -212,11 +274,24 @@ function App() {
     if (fileInput) fileInput.value = ''
   }
 
+  // Show loading spinner while checking auth
+  if (isCheckingAuth) {
+    return (
+      <div className="app-container loading">
+        <div className="loading-spinner">Loading...</div>
+      </div>
+    )
+  }
+
+  // Show login page if not authenticated
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} />
+  }
+
   return (
     <div className="app-container">
-      <div>
-        <h1>Mail sender</h1>
-        
+      <Header user={user} onLogout={handleLogout} />
+      <div className="app-content">
         <FileUploadSection
           selectedFile={selectedFile}
           onFileChange={handleFileChange}

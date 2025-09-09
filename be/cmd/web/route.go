@@ -15,14 +15,23 @@ func route() http.Handler {
   sendMailHander := handler.NewSendMailHandler()
   emailConfigHandler := handler.NewEmailConfigHandler()
 
-  // Create Handler
+  // Global middleware
   mux.Use(middleware.CORS)
-  mux.Post("/upload_file", fileHanlder.SaveFile)
-  mux.Post("/send_email", sendMailHander.SendEmail)
-  mux.Post("/email-config", emailConfigHandler.SaveEmailConfig)
-  mux.Get("/email-config", emailConfigHandler.GetEmailConfig)
 
-  //
+  // Public routes (no authentication required)
+  mux.Post("/login", handler.LoginHandler)
+
+  // Protected routes (JWT authentication required)
+  mux.Group(func(r chi.Router) {
+    r.Use(middleware.JWTMiddleware)
+    
+    r.Post("/upload_file", fileHanlder.SaveFile)
+    r.Post("/send_email", sendMailHander.SendEmail)
+  })
+
+    mux.Post("/email-config", emailConfigHandler.SaveEmailConfig)
+    mux.Get("/email-config", emailConfigHandler.GetEmailConfig)
 
   return mux
 }
+
