@@ -1,4 +1,4 @@
-# cquan_mail_sender
+# Automatic Email Sender 
 
 A web application for sending emails, featuring a Go backend and a React frontend.
 

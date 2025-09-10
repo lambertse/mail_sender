@@ -1,4 +1,3 @@
-
 package model
 
 import (
@@ -7,19 +6,19 @@ import (
 )
 
 type Receiver struct {
-  ID    string    `json:"id"`
-  Name  string `json:"name"`
-  Owner string `json:"owner"`
-  Email string `json:"email"`
-  TaxID string `json:"tax_id"`
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Owner string `json:"owner"`
+	Email string `json:"email"`
+	TaxID string `json:"tax_id"`
 }
 
 func (m *Receiver) PrintReceiver() {
-  fmt.Println("ID:", m.ID)
-  fmt.Println("Name:", m.Name)
-  fmt.Println("Owner:", m.Owner)
-  fmt.Println("Email:", m.Email)
-  fmt.Println("TaxID:", m.TaxID)
+	fmt.Println("ID:", m.ID)
+	fmt.Println("Name:", m.Name)
+	fmt.Println("Owner:", m.Owner)
+	fmt.Println("Email:", m.Email)
+	fmt.Println("TaxID:", m.TaxID)
 }
 
 const sheetName = "MainSheet"
@@ -39,25 +38,40 @@ func GetReceiverFromSource(filepath string) ([]*Receiver, error) {
 
 	// Get all the rows in the Sheet2.
 	rows, err := f.GetRows(sheetName)
-  // Protectect that the first two rows are handlers
-  if err != nil {
-    fmt.Println(err)
-    return nil, err
-  }
-  if len(rows) < 2 {
-    fmt.Println("Not enough rows in the sheet")
-    return nil, fmt.Errorf("not enough rows in the sheet")
-  }
+	// Protectect that the first two rows are handlers
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	if len(rows) < 2 {
+		fmt.Println("Not enough rows in the sheet")
+		return nil, fmt.Errorf("not enough rows in the sheet")
+	}
 	rows = rows[1:]
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
 	var receivers []*Receiver
+	emailSet := make(map[string]bool)
 	for idx, row := range rows {
+		if len(row) < 4 {
+			continue
+		}
+
+		email := row[2]
+		// Skip if email is empty or already seen
+		if email == "" {
+			continue
+		}
+		if emailSet[email] {
+			continue
+		}
+		// emailSet[email] = true
+
 		var receiver Receiver
-        // Print index 
-        receiver.ID = fmt.Sprintf("%d", idx+1)
+		// Print index
+		receiver.ID = fmt.Sprintf("%d", idx+1)
 		receiver.Name = row[0]
 		receiver.Owner = row[1]
 		receiver.Email = row[2]
@@ -65,20 +79,21 @@ func GetReceiverFromSource(filepath string) ([]*Receiver, error) {
 		receivers = append(receivers, &receiver)
 		fmt.Println()
 	}
+	fmt.Printf("Total unique receivers: %d\n", len(receivers))
 	return receivers, nil
 }
 
 func (m *Receiver) GetReceiverAsJSON() string {
-    return fmt.Sprintf(`{"id": "%s", "name": "%s", "owner": "%s", "email": "%s", "tax_id": "%s"}`, m.ID, m.Name, m.Owner, m.Email, m.TaxID)
+	return fmt.Sprintf(`{"id": "%s", "name": "%s", "owner": "%s", "email": "%s", "tax_id": "%s"}`, m.ID, m.Name, m.Owner, m.Email, m.TaxID)
 }
 
 func EncodeReceiversToJSON(receivers []*Receiver) string {
-  var jsonStr string
-  for i, receiver := range receivers {
-    jsonStr += receiver.GetReceiverAsJSON()
-    if i < len(receivers)-1 {
-      jsonStr += ", "
-    }
-  }
-  return "[" + jsonStr + "]"
+	var jsonStr string
+	for i, receiver := range receivers {
+		jsonStr += receiver.GetReceiverAsJSON()
+		if i < len(receivers)-1 {
+			jsonStr += ", "
+		}
+	}
+	return "[" + jsonStr + "]"
 }

@@ -5,8 +5,6 @@ const FileUploadSection = ({
   selectedFile, 
   onFileChange, 
   onDownloadSample, 
-  onEmailConfig, 
-  emailConfig 
 }) => {
   const [isDragOver, setIsDragOver] = useState(false)
 
@@ -88,14 +86,6 @@ const FileUploadSection = ({
         >
           <span className="button-icon">⬇️</span>
           Download Template
-        </button>
-        
-        <button
-          onClick={onEmailConfig}
-          className={`action-button ${emailConfig ? 'success' : 'primary'}`}
-        >
-          <span className="button-icon">{emailConfig ? '✓' : '⚙️'}</span>
-          {emailConfig ? 'Email Configured' : 'Configure Email'}
         </button>
       </div>
     </div>

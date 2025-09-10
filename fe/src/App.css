@@ -39,3 +39,190 @@
   flex-direction: column;
   justify-content: center;
 }
+
+.processor-view {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 4rem 2rem 0 2rem;
+  width: 100%;
+  position: relative;
+}
+
+.top-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 2rem;
+  position: absolute;
+  top: 0;
+  left: 2rem;
+  right: 2rem;
+  width: calc(100% - 4rem);
+}
+
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); 
+  color: black;
+  border: none;
+  padding: 0.875rem 1.75rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.25);
+  backdrop-filter: blur(10px);
+  position: absolute;
+  left: 0;
+}
+
+.back-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.back-button:hover {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.35);
+}
+
+.back-button:hover::before {
+  left: 100%;
+}
+
+.back-button:active {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+}
+
+.back-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.4);
+}
+
+.back-icon {
+  font-size: 1.1rem;
+  font-weight: 600;
+  transition: transform 0.2s ease;
+}
+
+.back-button:hover .back-icon {
+  transform: translateX(-2px);
+}
+
+.email-config-button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 16px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  min-width: 200px;
+  justify-content: center;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.email-config-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s;
+}
+
+.email-config-button:hover::before {
+  left: 100%;
+}
+
+.email-config-button:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+}
+
+.email-config-button:active {
+  transform: translateY(-1px) scale(1.02);
+}
+
+.email-config-button.primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.email-config-button.primary:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+}
+
+.email-config-button.success {
+  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.email-config-button.success:hover {
+  background: linear-gradient(135deg, #059669 0%, #065f46 100%);
+}
+
+.email-config-button .button-icon {
+  font-size: 1.3rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+}
+
+/* Responsive design for back button */
+@media (max-width: 640px) {
+  .processor-view {
+    padding: 0 1rem;
+  }
+  
+  .top-controls {
+    flex-direction: column;
+    gap: 1rem;
+    position: static;
+    width: 100%;
+    left: 0;
+    right: 0;
+    margin-bottom: 2rem;
+  }
+  
+  .back-button,
+  .email-config-button {
+    width: 100%;
+    justify-content: center;
+    padding: 1rem 1.75rem;
+    font-size: 1rem;
+  }
+  
+  .back-button:hover .back-icon {
+    transform: none;
+  }
+}
