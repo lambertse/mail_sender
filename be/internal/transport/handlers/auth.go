@@ -2,11 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 	"time"
-    "fmt"
-    "os"
-    "strings"
 
 	"github.com/golang-jwt/jwt/v4"
 )
@@ -22,20 +21,19 @@ type LoginResponse struct {
 }
 
 type User struct {
-	Username string `json:"username"`
-    MailToken string `json:"mail_token"`
-	ID       int    `json:"id,omitempty"`
+	Username  string `json:"username"`
+	MailToken string `json:"mail_token"`
+	ID        int    `json:"id,omitempty"`
 }
 
 // JWT claims structure
 type Claims struct {
-	Username string `json:"username"`
-    MailToken string `json:"mail_token"`
+	Username  string `json:"username"`
+	MailToken string `json:"mail_token"`
 	jwt.RegisteredClaims
 }
 
 // JWT secret key get from .env
-
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	// Set CORS headers
@@ -59,7 +57,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-    fmt.Printf("Login user: %s, pass: %s\n", loginReq.Username, loginReq.Password)
+	fmt.Printf("Login user: %s, pass: %s\n", loginReq.Username, loginReq.Password)
 
 	// Validate credentials
 	if !validateCredentials(loginReq.Username, loginReq.Password) {
@@ -70,7 +68,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	// Generate JWT token
 	token, err := generateJWT(loginReq.Username, loginReq.Password)
 	if err != nil {
-        fmt.Printf("Error generating token: %v\n", err)
+		fmt.Printf("Error generating token: %v\n", err)
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
 		return
 	}
@@ -79,8 +77,8 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	response := LoginResponse{
 		Token: token,
 		User: User{
-			Username: loginReq.Username,
-            MailToken: loginReq.Password,
+			Username:  loginReq.Username,
+			MailToken: loginReq.Password,
 		},
 	}
 
@@ -89,42 +87,42 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func validateCredentials(username, password string) bool {
-    return true	
+	return true
 }
 
 func generateJWT(username, mailtoken string) (string, error) {
-    var jwtKey = os.Getenv("JWT_SECRET_KEY")
+	var jwtKey = "8x7Kp2vN9Qw3rT5yU8iO1pA6sD4fG7hJ9kL2mN5qR8tY1wE3r"
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
-		Username: username,
-        MailToken: mailtoken,
+		Username:  username,
+		MailToken: mailtoken,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Issuer:    "mail-sender-app",
 		},
 	}
-    fmt.Printf("JWT Key: %s\n", jwtKey)
+	fmt.Printf("JWT Key: %s\n", jwtKey)
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(jwtKey))
 }
 
 func ExtractClaimsFromToken(tokenString string) (*Claims, error) {
-	var jwtKey = os.Getenv("JWT_SECRET_KEY")
-	
+	var jwtKey = "8x7Kp2vN9Qw3rT5yU8iO1pA6sD4fG7hJ9kL2mN5qR8tY1wE3r"
+
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(jwtKey), nil
 	})
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 		return claims, nil
 	}
-	
+
 	return nil, fmt.Errorf("invalid token")
 }
 
@@ -133,8 +131,7 @@ func GetUserFromRequest(r *http.Request) (*Claims, error) {
 	if authHeader == "" {
 		return nil, fmt.Errorf("authorization header missing")
 	}
-	
+
 	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 	return ExtractClaimsFromToken(tokenString)
 }
-

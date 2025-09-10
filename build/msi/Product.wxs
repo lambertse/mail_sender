@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+  <!--
+    WiX Installer for:
+      - Go backend service (runs on port 8081, adjust as needed)
+      - Nginx serving built React frontend (port 8080)
+    Assumes workflow copies everything to build/msi/staging before candle/light.
+    SourceDir variable is passed in candle step (-dSourceDir="staging").
+  -->
+  <Product
+      Id="*"
+      Name="CQuan Mail Sender Suite"
+      Language="1033"
+      Version="1.0.0"
+      Manufacturer="YourCompany"
+      UpgradeCode="PUT-GUID-HERE-1111-2222-3333-444444444444">
+
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
+
+    <MajorUpgrade
+        Schedule="afterInstallInitialize"
+        AllowDowngrades="no"
+        DowngradeErrorMessage="A newer version is already installed." />
+
+    <MediaTemplate />
+
+    <Feature Id="MainFeature" Title="Mail Sender Suite" Level="1">
+      <ComponentRef Id="CmpBackendExe" />
+      <ComponentRef Id="CmpNginxExe" />
+      <ComponentRef Id="CmpNginxConf" />
+      <ComponentRef Id="CmpFrontendFiles" />
+    </Feature>
+
+    <Property Id="ARPCONTACT" Value="support@yourcompany.tld"/>
+    <Property Id="ARPHELPLINK" Value="https://example.com/support"/>
+    <Property Id="ARPURLINFOABOUT" Value="https://example.com"/>
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLDIR" Name="CQuanMailSender">
+          <Directory Id="DirBackend" Name="backend" />
+          <Directory Id="DirFrontend" Name="frontend" />
+          <Directory Id="DirNginx" Name="nginx">
+            <Directory Id="DirNginxConf" Name="conf" />
+            <Directory Id="DirNginxLogs" Name="logs" />
+            <Directory Id="DirNginxTemp" Name="temp" />
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <!-- Backend Service -->
+    <Component Id="CmpBackendExe" Guid="*" Directory="DirBackend">
+      <File Id="FilBackendExe" Source="$(var.SourceDir)\backend\cquan_mail_sender.exe" KeyPath="yes" />
+      <ServiceInstall
+          Id="SvcBackend"
+          Name="CQuanMailSender"
+          DisplayName="CQuan Mail Sender Backend"
+          Description="Go backend API service for the Mail Sender application."
+          Start="auto"
+          Type="ownProcess"
+          Vital="yes" />
+      <ServiceControl Id="SvcBackendControl"
+                      Name="CQuanMailSender"
+                      Start="install"
+                      Stop="both"
+                      Remove="uninstall"
+                      Wait="yes" />
+    </Component>
+
+    <!-- Nginx Executable as Service -->
+    <Component Id="CmpNginxExe" Guid="*" Directory="DirNginx">
+      <File Id="FilNginxExe" Source="$(var.SourceDir)\nginx\nginx.exe" KeyPath="yes" />
+      <ServiceInstall
+          Id="SvcNginx"
+          Name="CQuanNginx"
+          DisplayName="CQuan Nginx Frontend"
+          Description="Nginx serving the React frontend for Mail Sender."
+          Arguments="-p [INSTALLDIR] -c nginx\conf\nginx.conf"
+          Start="auto"
+          Type="ownProcess"
+          Vital="yes" />
+      <ServiceControl Id="SvcNginxControl"
+                      Name="CQuanNginx"
+                      Start="install"
+                      Stop="both"
+                      Remove="uninstall"
+                      Wait="yes" />
+    </Component>
+
+    <!-- Nginx Config -->
+    <Component Id="CmpNginxConf" Guid="*" Directory="DirNginxConf">
+      <File Id="FilNginxConf" Source="$(var.SourceDir)\nginx\conf\nginx.conf" KeyPath="yes" />
+    </Component>
+
+    <!-- Frontend static files -->
+    <Component Id="CmpFrontendFiles" Guid="*" Directory="DirFrontend">
+      <!-- Harvesting (heat.exe) recommended for many files; using wildcard below is not directly supported in WiX.
+           For real production builds, replace with heat-generated fragment. For a minimal example, we include index.html if it exists. -->
+      <File Id="FilFrontendIndex" Source="$(var.SourceDir)\frontend\index.html" KeyPath="yes" Condition="Installed OR (NOT Installed)" />
+      <!-- Add more File elements or use heat.exe to auto-generate a fragment. -->
+    </Component>
+
+    <InstallExecuteSequence>
+      <Custom Action="StopServicesEarly" Before="InstallFinalize">NOT Installed</Custom>
+    </InstallExecuteSequence>
+
+    <UIRef Id="WixUI_Minimal" />
+  </Product>
+</Wix>
