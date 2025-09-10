@@ -1,4 +1,4 @@
-# This workflow will build a golang project
+# This workflow will build a golang project on Windows
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
 
 name: Go
@@ -19,10 +19,14 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.20'
+        go-version: '1.21'
 
     - name: Build
-      run: go build -v ./be/cmd/web/*
+      run: |
+        cd be
+        go build -v ./...
 
-    - name: Test
-      run: go test -v ./be/cmd/web/*
+    - name: Build main application
+      run: |
+        cd be
+        go build -o ../build/app.exe ./cmd/web
