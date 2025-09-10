@@ -1,68 +1,243 @@
-.upload-container {
-  margin: 20px;
-  padding: 20px;
-  border: 2px dashed #ccc;
+.upload-section {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.upload-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.upload-header h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.upload-header p {
+  color: #6b7280;
+  font-size: 1.125rem;
+  margin: 0;
+}
+
+.upload-zone {
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #fafafa;
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.upload-zone::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+  transition: left 0.6s;
+}
+
+.upload-zone:hover::before {
+  left: 100%;
+}
+
+.upload-zone:hover {
+  border-color: #3b82f6;
+  background: #f8faff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+}
+
+.upload-zone.drag-over {
+  border-color: #10b981;
+  background: #f0fdf4;
+  transform: scale(1.02);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
+}
+
+.upload-zone.has-file {
+  border-color: #10b981;
+  background: #f0fdf4;
+  border-style: solid;
+}
+
+.upload-prompt {
+  position: relative;
+  z-index: 1;
+}
+
+.upload-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.upload-prompt h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.upload-prompt p {
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.file-format {
+  display: inline-block;
+  background: #e5e7eb;
+  color: #374151;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 2rem;
+  font-weight: 500;
+}
+
+.file-selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  padding: 1.5rem;
   border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1;
 }
 
-.upload-button {
-  background-color: #646cff;
-  color: white;
-  padding: 10px 20px;
+.file-icon {
+  font-size: 3rem;
+  margin-right: 1rem;
+}
+
+.file-details {
+  flex: 1;
+  text-align: left;
+}
+
+.file-details h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.25rem 0;
+}
+
+.file-details p {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.file-status {
+  font-size: 1.5rem;
+  color: #10b981;
+  background: #dcfce7;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s;
-  margin-bottom: 10px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  min-width: 160px;
+  justify-content: center;
 }
 
-.upload-button:hover {
-  background-color: #535bf2;
+.action-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.file-info {
-  margin-top: 20px;
+.action-button:active {
+  transform: translateY(0);
 }
 
-.email-config-button {
-  background-color: #FF9800;
+.action-button.primary {
+  background: #3b82f6;
   color: white;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s;
-  margin-left: 10px;
-  margin-bottom: 10px;
 }
 
-.email-config-button:hover {
-  background-color: #F57C00;
+.action-button.primary:hover {
+  background: #2563eb;
 }
 
-.email-config-button.configured {
-  background-color: #4CAF50;
-}
-
-.email-config-button.configured:hover {
-  background-color: #45a049;
-}
-
-.download-sample-button {
-  background-color: #9C27B0;
+.action-button.secondary {
+  background: #6b7280;
   color: white;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s;
-  margin-left: 10px;
-  margin-bottom: 10px;
 }
 
-.download-sample-button:hover {
-  background-color: #7B1FA2;
+.action-button.secondary:hover {
+  background: #4b5563;
+}
+
+.action-button.success {
+  background: #10b981;
+  color: white;
+}
+
+.action-button.success:hover {
+  background: #059669;
+}
+
+.button-icon {
+  font-size: 2rem;
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .upload-section {
+    padding: 1rem;
+  }
+  
+  .upload-zone {
+    padding: 2rem 1rem;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .action-button {
+    width: 100%;
+  }
+  
+  .file-selected {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .file-details {
+    text-align: center;
+  }
 }

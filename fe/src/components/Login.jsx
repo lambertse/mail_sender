@@ -6,7 +6,6 @@ import { FaEye } from "react-icons/fa6";
 import { FaEyeSlash } from "react-icons/fa6";
 import './Login.css';
 
-
 const Login = ({ onLogin }) => {
   const [credentials, setCredentials] = useState({
     username: '',
@@ -77,41 +76,23 @@ const Login = ({ onLogin }) => {
             <img src={Logo} alt="" />
           </div>
           <div className="login-center">
-            <h2>Welcome back!</h2>
-            <p>Please enter your details</p>
-            <form>
-              <input type="email" placeholder="Email" />
+            <h2>Welcome you guy!</h2>         
+            <p>Automatic Mail Sender application</p>
+            
+            <form onSubmit={handleSubmit} className="login-form">
+              <input type="email" placeholder="Email" name="username" value={credentials.username} onChange={handleInputChange}/>
               <div className="pass-input-div">
-                <input type={showPassword ? "text" : "password"} placeholder="Password" />
+                <input type={showPassword ? "text" : "password"} placeholder="Mail token" name="password" value={credentials.password} onChange={handleInputChange}/>
                 {showPassword ? <FaEyeSlash onClick={() => {setShowPassword(!showPassword)}} /> : <FaEye onClick={() => {setShowPassword(!showPassword)}} />}
-                
-              </div>
-
-              <div className="login-center-options">
-                <div className="remember-div">
-                  <input type="checkbox" id="remember-checkbox" />
-                  <label htmlFor="remember-checkbox">
-                    Remember for 30 days
-                  </label>
-                </div>
-                <a href="#" className="forgot-pass-link">
-                  Forgot password?
-                </a>
               </div>
               <div className="login-center-buttons">
-                <button type="button">Log In</button>
-                <button type="button">
-                  <img src={GoogleSvg} alt="" />
-                  Log In with Google
+                <button type="submit" disabled={isLogging}>
+                  {isLogging ? 'Logging in...' : 'Log In'}
                 </button>
-              </div>
+             </div>
             </form>
           </div>
-
-          <p className="login-bottom-p">
-            Don't have an account? <a href="#">Sign Up</a>
-          </p>
-        </div>
+      </div>
       </div>
     </div>
   );

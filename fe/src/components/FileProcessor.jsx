@@ -3,26 +3,14 @@ import UserDataTable from './UserDataTable'
 import './FileProcessor.css'
 
 const FileProcessor = ({ 
-  selectedFile, 
   isProcessing, 
   processResult, 
   userData, 
-  onProcessFile,
   onSendMail,
   isSendingMail
 }) => {
-  if (!selectedFile) return null
-
   return (
     <>
-      <button 
-        className="process-button"
-        onClick={onProcessFile}
-        disabled={isProcessing}
-      >
-        {isProcessing ? 'Processing...' : 'Process File'}
-      </button>
-
       {processResult && (
         <div className={`process-result ${processResult.error ? 'error' : 'success'}`}>
           {processResult.error ? (

@@ -1,5 +1,5 @@
 #root {
-  max-width: 1280px;
+  max-width: 100%;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
@@ -35,4 +35,7 @@
 
 .app-content {
   padding-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }

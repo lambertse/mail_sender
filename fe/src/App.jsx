@@ -65,7 +65,7 @@ function App() {
     setShowEmailForm(false)
   }
 
-  const handleFileChange = (event) => {
+  const handleFileChange = async (event) => {
     const file = event.target.files[0]
     
     // Check if file is selected
@@ -78,23 +78,7 @@ function App() {
       event.target.value = '' // Reset the input
       return
     }
-
     setSelectedFile(file)
-    setProcessResult(null)
-    setUserData(null)
-  }
-
-  const handleDownloadSample = () => {
-    const link = document.createElement('a')
-    link.href = '/sample-template.xlsx'
-    link.download = 'sample-template.xlsx'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-
-  const handleProcessFile = async () => {
-    if (!selectedFile) return
 
     setIsProcessing(true)
 
@@ -104,7 +88,6 @@ function App() {
     formData.append('timestamp', CURRENT_TIMESTAMP)
 
     try {
-            console.log('authen token:', localStorage.getItem('authToken'))
       const response = await fetch('http://localhost:8089/upload_file', {
         method: 'POST',
         headers: {
@@ -137,6 +120,16 @@ function App() {
     } finally {
       setIsProcessing(false)
     }
+ 
+  }
+
+  const handleDownloadSample = () => {
+    const link = document.createElement('a')
+    link.href = '/sample-template.xlsx'
+    link.download = 'sample-template.xlsx'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   const handleSendMail = async () => {
@@ -301,11 +294,9 @@ function App() {
         />
 
         <FileProcessor
-          selectedFile={selectedFile}
           isProcessing={isProcessing}
           processResult={processResult}
           userData={userData}
-          onProcessFile={handleProcessFile}
           onSendMail={handleSendMail}
           isSendingMail={isSendingMail}
         />
