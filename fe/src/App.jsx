@@ -5,6 +5,7 @@ import EmailConfigForm from './components/EmailConfigForm'
 import FileUploadSection from './components/FileUploadSection'
 import FileProcessor from './components/FileProcessor'
 import EmailResultsDisplay from './components/EmailResultsDisplay'
+import LoadingSpinner from './components/LoadingSpinner'
 import './App.css'
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
   const [processResult, setProcessResult] = useState(null)
   const [userData, setUserData] = useState(null)
   const [showEmailForm, setShowEmailForm] = useState(false)
+  const [currentView, setCurrentView] = useState('upload') // 'upload' or 'processor'
   const [emailConfig, setEmailConfig] = useState(() => {
     // Load saved email config from localStorage on initial load
     const saved = localStorage.getItem('emailConfig')
@@ -63,6 +65,7 @@ function App() {
     setProcessResult(null)
     setUserData(null)
     setShowEmailForm(false)
+    setCurrentView('upload') 
   }
 
   const handleFileChange = async (event) => {
@@ -79,11 +82,11 @@ function App() {
       return
     }
     setSelectedFile(file)
-
     setIsProcessing(true)
+    await new Promise(resolve => setTimeout(resolve, 500)) 
 
     const formData = new FormData()
-    formData.append('file', selectedFile)
+    formData.append('file', file)
     formData.append('user', CURRENT_USER)
     formData.append('timestamp', CURRENT_TIMESTAMP)
 
@@ -107,11 +110,11 @@ function App() {
       const result = await response.json()
       setProcessResult({
         success: true,
-        fileName: selectedFile.name,
+        fileName: file.name,
         timestamp: CURRENT_TIMESTAMP
       })
       setUserData(result)
-      
+      setCurrentView('processor') // Navigate to processor view 
     } catch (error) {
       setProcessResult({
         error: 'Failed to process file',
@@ -136,7 +139,7 @@ function App() {
     if (!userData) return
 
     setIsSendingMail(true)
-
+    await new Promise(resolve => setTimeout(resolve, 500))
     const requestBody = {
       data: userData,
     }
@@ -169,13 +172,6 @@ function App() {
           showRetryInterface: result.failed && result.failed.length > 0
         }
       }))
-      
-      if (result.failed && result.failed.length > 0) {
-        console.log(`${result.success?.length || 0} emails sent successfully, ${result.failed.length} failed`)
-      } else {
-        alert('All emails sent successfully!')
-      }
-      
     } catch (error) {
       alert(`Failed to send mail: ${error.message}`)
     } finally {
@@ -191,20 +187,20 @@ function App() {
     setEmailConfig(formData)
     localStorage.setItem('emailConfig', JSON.stringify(formData))
     setShowEmailForm(false)
-    alert('Email configuration saved!')
   }
 
   const handleCloseEmailForm = () => {
     setShowEmailForm(false)
   }
 
-  const handleRetryFailedEmails = async () => {
-    if (!processResult?.mailResult?.failed || processResult.mailResult.failed.length === 0) return
+  const handleRetryFailedEmails = async (failedUsers) => {
+    if (!failedUsers || failedUsers.length === 0) return
 
     setIsSendingMail(true)
+    await new Promise(resolve => setTimeout(resolve, 500))
 
     const requestBody = {
-      data: processResult.mailResult.failed,
+      data: failedUsers,
     }
 
     try {
@@ -235,19 +231,13 @@ function App() {
           showRetryInterface: result.failed && result.failed.length > 0
         }
       }))
-
-      if (result.failed && result.failed.length > 0) {
-        console.log(`Retry: ${result.success?.length || 0} more emails sent, ${result.failed.length} still failed`)
-      } else {
-        alert('All remaining emails sent successfully!')
-      }
       
     } catch (error) {
       alert(`Failed to retry sending mail: ${error.message}`)
     } finally {
       setIsSendingMail(false)
     }
-  }
+  } 
 
   const handleCancelRetry = () => {
     setProcessResult(prev => ({
@@ -263,8 +253,9 @@ function App() {
     setProcessResult(null)
     setUserData(null)
     setSelectedFile(null)
+    setCurrentView('upload')
     const fileInput = document.getElementById('file-upload')
-    if (fileInput) fileInput.value = ''
+    if (fileInput) fileInput.value = '' 
   }
 
   // Show loading spinner while checking auth
@@ -281,33 +272,55 @@ function App() {
     return <Login onLogin={handleLogin} />
   }
 
-  return (
+   return (
     <div className="app-container">
       <Header user={user} onLogout={handleLogout} />
       <div className="app-content">
-        <FileUploadSection
-          selectedFile={selectedFile}
-          onFileChange={handleFileChange}
-          onDownloadSample={handleDownloadSample}
-          onEmailConfig={handleEmailConfig}
-          emailConfig={emailConfig}
-        />
+        {currentView === 'upload' ? (
+          <FileUploadSection
+            selectedFile={selectedFile}
+            onFileChange={handleFileChange}
+            onDownloadSample={handleDownloadSample}
+          />
+        ) : (
+          <div className="processor-view">
+            <div className="top-controls">
+              <button 
+                className="back-button"
+                onClick={handleBackToMain}
+                aria-label="Back to file upload"
+              >
+                <span className="back-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#1f1f1f"><path d="m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z"/></svg> 
+                </span>
+              </button>
+              
+              <button
+                onClick={handleEmailConfig}
+                className={`email-config-button ${emailConfig ? 'success' : 'primary'}`}
+              >
+                <span className="button-icon">{emailConfig ? '✓' : '⚙️'}</span>
+                {emailConfig ? 'Email Configured' : 'Configure Email'}
+              </button>
+            </div>
+            
+            <FileProcessor
+              isProcessing={isProcessing}
+              processResult={processResult}
+              orgUserData={userData}
+              onSendMail={handleSendMail}
+              isSendingMail={isSendingMail}
+            />
 
-        <FileProcessor
-          isProcessing={isProcessing}
-          processResult={processResult}
-          userData={userData}
-          onSendMail={handleSendMail}
-          isSendingMail={isSendingMail}
-        />
-
-        <EmailResultsDisplay
-          mailResult={processResult?.mailResult}
-          isSendingMail={isSendingMail}
-          onRetryFailedEmails={handleRetryFailedEmails}
-          onCancelRetry={handleCancelRetry}
-          onBackToMain={handleBackToMain}
-        />
+            <EmailResultsDisplay
+              mailResult={processResult?.mailResult}
+              isSendingMail={isSendingMail}
+              onRetryFailedEmails={handleRetryFailedEmails}
+              onCancelRetry={handleCancelRetry}
+              onBackToMain={handleBackToMain}
+            />
+          </div>
+        )}
 
         {showEmailForm && (
           <EmailConfigForm 
@@ -317,6 +330,10 @@ function App() {
           />
         )}
       </div>
+      <LoadingSpinner 
+        message="Uploading File" 
+        isVisible={isProcessing} 
+      />
     </div>
   )
 }

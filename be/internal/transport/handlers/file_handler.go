@@ -51,7 +51,6 @@ func (h *FileHandler) SaveFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonResponse := model.EncodeReceiversToJSON(receivers)
-	log.Printf("JSON Response: %s", jsonResponse)
 	// Set the response header to application/json
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

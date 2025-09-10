@@ -93,6 +93,10 @@
   margin-bottom: 1rem;
 }
 
+.upload-prompt span {
+  font-size: 1.5rem;
+}
+
 .file-format {
   display: inline-block;
   background: #e5e7eb;

@@ -3,16 +3,15 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"os"
 	"strings"
-    "os"
-    "fmt"
 
 	"github.com/golang-jwt/jwt/v4"
 )
 
 type Claims struct {
-	Username string `json:"username"`
-    MailToken string `json:"mail_token"`
+	Username  string `json:"username"`
+	MailToken string `json:"mail_token"`
 	jwt.RegisteredClaims
 }
 
@@ -44,9 +43,8 @@ func JWTMiddleware(next http.Handler) http.Handler {
 		}
 
 		// Validate token
-        fmt.Println("tokenString:", tokenString)
 		claims := &Claims{}
-        var jwtKey = []byte(os.Getenv("JWT_SECRET_KEY")) 
+		var jwtKey = []byte(os.Getenv("JWT_SECRET_KEY"))
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 			return jwtKey, nil
 		})
