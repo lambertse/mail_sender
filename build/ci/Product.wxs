@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Mail Sender" 
+		   Manufacturer="tri-le_opswat" 
+		   Version="1.0.0.0" 
+		   UpgradeCode="12345678-1234-5678-9012-123456789012"
+		   Language="1033"
+		   InstallerVersion="200">
+
+	<SummaryInformation Description="Mail Sender Application with Go backend and React frontend" />
+
+	<MajorUpgrade DowngradeErrorMessage="A newer version is already installed." />
+
+	<Media Id="1" Cabinet="product.cab" EmbedCab="yes" />
+
+	<!-- Define installation directory -->
+	<StandardDirectory Id="ProgramFiles64Folder">
+	  <Directory Id="INSTALLFOLDER" Name="Mail Sender">
+		<Directory Id="NginxFolder" Name="nginx">
+		  <Directory Id="NginxConfFolder" Name="conf" />
+		  <Directory Id="NginxLogsFolder" Name="logs" />
+		  <Directory Id="NginxTempFolder" Name="temp">
+			<Directory Id="ClientBodyTempFolder" Name="client_body_temp" />
+			<Directory Id="ProxyTempFolder" Name="proxy_temp" />
+			<Directory Id="FastcgiTempFolder" Name="fastcgi_temp" />
+			<Directory Id="UwsgiTempFolder" Name="uwsgi_temp" />
+			<Directory Id="ScgiTempFolder" Name="scgi_temp" />
+		  </Directory>
+		</Directory>
+		<Directory Id="WwwRootFolder" Name="wwwroot">
+		  <!-- Subdirectories will be dynamically added here -->
+		</Directory>
+		<Directory Id="LogsFolder" Name="logs" />
+	  </Directory>
+	</StandardDirectory>
+
+	<!-- Component for Go backend executable -->
+	<Component Id="GoBackend" Directory="INSTALLFOLDER" Guid="87654321-4321-8765-2109-876543210987">
+	  <File Id="ServerExe" Source="files/server.exe" KeyPath="yes" />
+	</Component>
+
+	<!-- Component for NSSM service manager -->
+	<Component Id="NSSMExecutable" Directory="INSTALLFOLDER" Guid="11111111-2222-3333-4444-555555555555">
+	  <File Id="NSSMExe" Source="files/nssm.exe" KeyPath="yes" />
+	</Component>
+
+	<!-- Component for Nginx executable -->
+	<Component Id="NginxExecutable" Directory="NginxFolder" Guid="22222222-3333-4444-5555-666666666666">
+	  <File Id="NginxExe" Source="files/nginx/nginx.exe" KeyPath="yes" />
+	</Component>
+
+	<!-- Component for Nginx configuration -->
+	<Component Id="NginxConfig" Directory="NginxConfFolder" Guid="33333333-4444-5555-6666-777777777777">
+	  <File Id="NginxConf" Source="files/nginx/conf/nginx.conf" KeyPath="yes" />
+	  <File Id="MimeTypes" Source="files/nginx/conf/mime.types" />
+	</Component>
+
+	<!-- Component for Nginx directories -->
+	<Component Id="NginxDirectories" Directory="NginxFolder" Guid="66666666-7777-8888-9999-000000000000">
+	  <CreateFolder Directory="NginxLogsFolder" />
+	  <CreateFolder Directory="ClientBodyTempFolder" />
+	  <CreateFolder Directory="ProxyTempFolder" />
+	  <CreateFolder Directory="FastcgiTempFolder" />
+	  <CreateFolder Directory="UwsgiTempFolder" />
+	  <CreateFolder Directory="ScgiTempFolder" />
+	</Component>
+
+	<!-- Component for Logs directory -->
+	<Component Id="LogsDirectory" Directory="LogsFolder" Guid="77777777-8888-9999-0000-111111111111">
+	  <CreateFolder />
+	</Component>
+
+	<!-- Frontend files placeholder -->
+	<!-- FRONTEND_DIRECTORIES_PLACEHOLDER -->
+	
+	<!-- Frontend components placeholder -->
+	<!-- FRONTEND_COMPONENTS_PLACEHOLDER -->
+
+	<!-- Service management scripts -->
+	<Component Id="ServiceScripts" Directory="INSTALLFOLDER" Guid="44444444-5555-6666-7777-888888888888">
+	  <File Id="InstallScript" Source="files/install_services.bat" KeyPath="yes" />
+	  <File Id="UninstallScript" Source="files/uninstall_services.bat" />
+	</Component>
+	<!-- Custom Actions for Service Management -->
+	<CustomAction Id="CustomRunInstallServicesBatch" 
+				  Directory="INSTALLFOLDER"
+				  ExeCommand='cmd.exe /c "cd /d &quot;[INSTALLFOLDER]&quot; &amp;&amp; install_services.bat &gt; logs\install_services.log 2&gt;&amp;1"'
+				  Execute="deferred"
+				  Impersonate="no"
+				  Return="check" />
+	
+	<CustomAction Id="CustomRunUninstallServicesBatch" 
+				  Directory="INSTALLFOLDER"
+				  ExeCommand='cmd.exe /c "cd /d &quot;[INSTALLFOLDER]&quot; &amp;&amp; uninstall_services.bat &gt; logs\uninstall_services.log 2&gt;&amp;1"'
+				  Execute="deferred"
+				  Impersonate="no"
+				  Return="check" />
+	
+	<!-- Install Sequence -->
+	<InstallExecuteSequence>
+	  <Custom Action="CustomRunInstallServicesBatch" After="InstallFiles" />
+	  <Custom Action="CustomRunUninstallServicesBatch" Before="RemoveFiles" Condition="Installed AND NOT REINSTALL" />
+	</InstallExecuteSequence>
+
+	<!-- Features -->
+	<Feature Id="Complete" Level="1">
+	  <ComponentRef Id="GoBackend" />
+	  <ComponentRef Id="NSSMExecutable" />
+	  <ComponentRef Id="NginxExecutable" />
+	  <ComponentRef Id="NginxConfig" />
+	  <ComponentRef Id="NginxDirectories" />
+	  <ComponentRef Id="LogsDirectory" />
+	  <!-- FRONTEND_COMPONENT_REFS_PLACEHOLDER -->
+	  <ComponentRef Id="ServiceScripts" />
+	</Feature>
+  </Package>
+</Wix>
