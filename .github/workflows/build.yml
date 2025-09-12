@@ -89,7 +89,7 @@ jobs:
           exit 1
         }
         
-    - name: Prepare installer files
+    - name: Create nginx directory structure and configuration
       run: |
         # Create required nginx directories
         New-Item -ItemType Directory -Path "installer/nginx/logs" -Force
@@ -99,27 +99,395 @@ jobs:
         New-Item -ItemType Directory -Path "installer/nginx/temp/fastcgi_temp" -Force
         New-Item -ItemType Directory -Path "installer/nginx/temp/uwsgi_temp" -Force
         New-Item -ItemType Directory -Path "installer/nginx/temp/scgi_temp" -Force
-
-        # Copy nginx config from source
-        Copy-Item -Path "wix/nginx.conf" -Destination "installer/nginx/conf/nginx.conf"
-
+        
+        # Create nginx configuration
+        $nginxConfig = @"
+        worker_processes  1;
+        
+        error_log  logs/error.log;
+        pid        logs/nginx.pid;
+        
+        events {
+            worker_connections  1024;
+        }
+        
+        http {
+            include       mime.types;
+            default_type  application/octet-stream;
+            
+            access_log    logs/access.log;
+            
+            sendfile        on;
+            keepalive_timeout  65;
+            
+            # Temp directories
+            client_body_temp_path temp/client_body_temp;
+            proxy_temp_path temp/proxy_temp;
+            fastcgi_temp_path temp/fastcgi_temp;
+            uwsgi_temp_path temp/uwsgi_temp;
+            scgi_temp_path temp/scgi_temp;
+            
+            server {
+                listen       8090;
+                server_name  localhost;
+                
+                # Serve React frontend
+                location / {
+                    root   ../wwwroot;
+                    index  index.html index.htm;
+                    try_files `$uri `$uri/ /index.html;
+                }
+                
+                # Proxy API requests to Go backend
+                location /api/ {
+                    proxy_pass http://localhost:8089/;
+                    proxy_set_header Host `$host;
+                    proxy_set_header X-Real-IP `$remote_addr;
+                    proxy_set_header X-Forwarded-For `$proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto `$scheme;
+                }
+            }
+        }
+        "@
+        $nginxConfig | Out-File -FilePath "installer/nginx/conf/nginx.conf" -Encoding utf8
     - name: Install WiX Toolset
       run: |
         dotnet tool install --global wix --version 4.0.4
-
     - name: Create WiX build directory structure
       run: |
-        # Copy installer files to wix/files directory for proper referencing
+        New-Item -ItemType Directory -Path "wix" -Force
+        New-Item -ItemType Directory -Path "wix/files" -Force
+        
+        # Copy all installer files to wix/files directory for proper referencing
         Copy-Item -Path "installer/*" -Destination "wix/files/" -Recurse -Force
         
-        # Copy service installation scripts
-        Copy-Item -Path "wix/install_services.bat" -Destination "wix/files/install_services.bat"
-        Copy-Item -Path "wix/uninstall_services.bat" -Destination "wix/files/uninstall_services.bat"
-
         # Verify files exist
         Write-Host "Files in wix/files directory:"
         Get-ChildItem -Path "wix/files" -Recurse | ForEach-Object { Write-Host $_.FullName }
-
+    - name: Create service installation scripts using NSSM
+      run: |
+        # Create install_services.bat using NSSM
+        $installScript = @"
+        @echo off
+        echo Installing Mail Sender services using NSSM...
+        net session >nul 2>&1
+        if %errorLevel% == 0 (
+            echo Running as administrator...
+            goto :main
+        ) else (
+            echo Requesting administrator privileges...
+            powershell -Command "Start-Process '%~f0' -Verb RunAs"
+            exit /b
+        )
+        :main
+        REM Check if NSSM is available in current directory
+        if not exist "%~dp0nssm.exe" (
+            echo nssm.exe not found in current directory
+            echo Please ensure nssm.exe is in the same directory as this script
+            pause
+            exit /b 1
+        )
+        REM Create logs directory if it doesn't exist
+        if not exist "%~dp0logs" mkdir "%~dp0logs"
+        REM Create nginx temp directories if they don't exist
+        if not exist "%~dp0nginx\logs" mkdir "%~dp0nginx\logs"
+        if not exist "%~dp0nginx\temp" mkdir "%~dp0nginx\temp"
+        if not exist "%~dp0nginx\temp\client_body_temp" mkdir "%~dp0nginx\temp\client_body_temp"
+        if not exist "%~dp0nginx\temp\proxy_temp" mkdir "%~dp0nginx\temp\proxy_temp"
+        if not exist "%~dp0nginx\temp\fastcgi_temp" mkdir "%~dp0nginx\temp\fastcgi_temp"
+        if not exist "%~dp0nginx\temp\uwsgi_temp" mkdir "%~dp0nginx\temp\uwsgi_temp"
+        if not exist "%~dp0nginx\temp\scgi_temp" mkdir "%~dp0nginx\temp\scgi_temp"
+        echo.
+        echo Installing Go backend service using NSSM...
+        REM Remove existing service if it exists
+        echo Removing existing backend service if present...
+        "%~dp0nssm.exe" remove "MailSenderBackend" confirm >nul 2>&1
+        REM Install the backend service
+        echo Installing backend service...
+        "%~dp0nssm.exe" install "MailSenderBackend" "%~dp0server.exe"
+        if %ERRORLEVEL% EQU 0 (
+            echo Backend service created successfully
+            
+            REM Set service display name
+            "%~dp0nssm.exe" set "MailSenderBackend" DisplayName "Mail Sender Backend"
+            
+            REM Set service description
+            "%~dp0nssm.exe" set "MailSenderBackend" Description "Mail Sender Go Backend Service"
+            
+            REM Set startup type to automatic
+            "%~dp0nssm.exe" set "MailSenderBackend" Start SERVICE_AUTO_START
+            
+            REM Configure restart behavior
+            "%~dp0nssm.exe" set "MailSenderBackend" AppExit Default Restart
+            "%~dp0nssm.exe" set "MailSenderBackend" AppRestartDelay 5000
+            
+            REM Set stdout and stderr logging
+            "%~dp0nssm.exe" set "MailSenderBackend" AppStdout "%~dp0logs\backend_output.log"
+            "%~dp0nssm.exe" set "MailSenderBackend" AppStderr "%~dp0logs\backend_error.log"
+            
+            REM Rotate logs daily to prevent them from growing too large
+            "%~dp0nssm.exe" set "MailSenderBackend" AppStdoutCreationDisposition 4
+            "%~dp0nssm.exe" set "MailSenderBackend" AppStderrCreationDisposition 4
+            
+            echo Backend service configuration completed
+        ) else (
+            echo Failed to create backend service
+        )
+        echo.
+        echo Installing Nginx service using NSSM...
+        REM Remove existing nginx service if it exists
+        echo Removing existing nginx service if present...
+        "%~dp0nssm.exe" remove "MailSenderNginx" confirm >nul 2>&1
+        REM Install the nginx service
+        echo Installing nginx service...
+        "%~dp0nssm.exe" install "MailSenderNginx" "%~dp0nginx\nginx.exe"
+        if %ERRORLEVEL% EQU 0 (
+            echo Nginx service created successfully
+            
+            REM Set service display name
+            "%~dp0nssm.exe" set "MailSenderNginx" DisplayName "Mail Sender Nginx"
+            
+            REM Set service description
+            "%~dp0nssm.exe" set "MailSenderNginx" Description "Mail Sender Frontend Web Server"
+            
+            REM Set startup type to automatic
+            "%~dp0nssm.exe" set "MailSenderNginx" Start SERVICE_AUTO_START
+            
+            REM Configure restart behavior
+            "%~dp0nssm.exe" set "MailSenderNginx" AppExit Default Restart
+            "%~dp0nssm.exe" set "MailSenderNginx" AppRestartDelay 5000
+            
+            REM Set stdout and stderr logging
+            "%~dp0nssm.exe" set "MailSenderNginx" AppStdout "%~dp0logs\nginx_output.log"
+            "%~dp0nssm.exe" set "MailSenderNginx" AppStderr "%~dp0logs\nginx_error.log"
+            
+            REM Rotate logs daily to prevent them from growing too large
+            "%~dp0nssm.exe" set "MailSenderNginx" AppStdoutCreationDisposition 4
+            "%~dp0nssm.exe" set "MailSenderNginx" AppStderrCreationDisposition 4
+            
+            echo Nginx service configuration completed
+        ) else (
+            echo Failed to create nginx service
+        )
+        echo.
+        echo Starting services...
+        "%~dp0nssm.exe" start "MailSenderBackend"
+        if %ERRORLEVEL% EQU 0 (
+            echo Backend service started successfully
+        ) else (
+            echo Warning: Backend service installed but failed to start. You can start it manually.
+        )
+        timeout /t 5 /nobreak >nul
+        "%~dp0nssm.exe" start "MailSenderNginx"
+        if %ERRORLEVEL% EQU 0 (
+            echo Nginx service started successfully
+        ) else (
+            echo Warning: Nginx service installed but failed to start. You can start it manually.
+            echo Testing nginx configuration...
+            "%~dp0nginx\nginx.exe" -t -c "%~dp0nginx\conf\nginx.conf"
+        )
+        echo.
+        echo ========================================
+        echo Services installation completed!
+        echo ========================================
+        echo Backend service: MailSenderBackend (auto-restart enabled)
+        echo Nginx service: MailSenderNginx (auto-restart enabled)
+        echo Access your application at: http://localhost
+        echo.
+        echo Service logs location: %~dp0logs\
+        echo   - backend_output.log / backend_error.log
+        echo   - nginx_output.log / nginx_error.log
+        echo.
+        echo Useful NSSM commands:
+        echo   Check backend status:  "%~dp0nssm.exe" status MailSenderBackend
+        echo   Check nginx status:    "%~dp0nssm.exe" status MailSenderNginx
+        echo   Stop backend:          "%~dp0nssm.exe" stop MailSenderBackend
+        echo   Stop nginx:            "%~dp0nssm.exe" stop MailSenderNginx
+        echo   Start backend:         "%~dp0nssm.exe" start MailSenderBackend
+        echo   Start nginx:           "%~dp0nssm.exe" start MailSenderNginx
+        echo   Restart backend:       "%~dp0nssm.exe" restart MailSenderBackend
+        echo   Restart nginx:         "%~dp0nssm.exe" restart MailSenderNginx
+        echo   View backend config:   "%~dp0nssm.exe" get MailSenderBackend
+        echo   View nginx config:     "%~dp0nssm.exe" get MailSenderNginx
+        echo ========================================
+        exit /b 0
+        "@
+        $installScript | Out-File -FilePath "wix/files/install_services.bat" -Encoding ascii
+        
+        # Create uninstall_services.bat using NSSM
+        $uninstallScript = @"
+        @echo off
+        echo Uninstalling Mail Sender services using NSSM...
+        net session >nul 2>&1
+        if %errorLevel% == 0 (
+            echo Running as administrator...
+            goto :main
+        ) else (
+            echo Requesting administrator privileges...
+            powershell -Command "Start-Process '%~f0' -Verb RunAs"
+            exit /b
+        )
+        :main
+        REM Check if NSSM is available in current directory
+        if not exist "%~dp0nssm.exe" (
+            echo nssm.exe not found in current directory
+            echo Please ensure nssm.exe is in the same directory as this script
+            pause
+            exit /b 1
+        )
+        echo.
+        echo Stopping and removing backend service...
+        "%~dp0nssm.exe" stop "MailSenderBackend" >nul 2>&1
+        timeout /t 5 /nobreak >nul
+        "%~dp0nssm.exe" remove "MailSenderBackend" confirm
+        if %ERRORLEVEL% EQU 0 (
+            echo Backend service removed successfully
+        ) else (
+            echo Backend service may not exist or failed to remove
+        )
+        echo.
+        echo Stopping and removing nginx service...
+        "%~dp0nssm.exe" stop "MailSenderNginx" >nul 2>&1
+        timeout /t 5 /nobreak >nul
+        "%~dp0nssm.exe" remove "MailSenderNginx" confirm
+        if %ERRORLEVEL% EQU 0 (
+            echo Nginx service removed successfully
+        ) else (
+            echo Nginx service may not exist or failed to remove
+        )
+        echo.
+        echo ========================================
+        echo Services uninstallation completed!
+        echo ========================================
+        echo Service logs will remain in the logs directory for your reference.
+        echo You can safely delete them if no longer needed.
+        exit /b 0
+        "@
+        $uninstallScript | Out-File -FilePath "wix/files/uninstall_services.bat" -Encoding ascii
+        
+    - name: Create WiX installer source
+      run: |
+        # Create Product.wxs with NSSM included and custom actions for service installation
+        $productWxs = @"
+        <?xml version="1.0" encoding="UTF-8"?>
+        <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+          <Package Name="Mail Sender" 
+        		   Manufacturer="tri-le_opswat" 
+        		   Version="1.0.0.0" 
+        		   UpgradeCode="12345678-1234-5678-9012-123456789012"
+        		   Language="1033"
+        		   InstallerVersion="200">
+        
+        	<SummaryInformation Description="Mail Sender Application with Go backend and React frontend" />
+        
+        	<MajorUpgrade DowngradeErrorMessage="A newer version is already installed." />
+        
+        	<Media Id="1" Cabinet="product.cab" EmbedCab="yes" />
+        
+        	<!-- Define installation directory -->
+        	<StandardDirectory Id="ProgramFiles64Folder">
+        	  <Directory Id="INSTALLFOLDER" Name="Mail Sender">
+        		<Directory Id="NginxFolder" Name="nginx">
+        		  <Directory Id="NginxConfFolder" Name="conf" />
+        		  <Directory Id="NginxLogsFolder" Name="logs" />
+        		  <Directory Id="NginxTempFolder" Name="temp">
+        			<Directory Id="ClientBodyTempFolder" Name="client_body_temp" />
+        			<Directory Id="ProxyTempFolder" Name="proxy_temp" />
+        			<Directory Id="FastcgiTempFolder" Name="fastcgi_temp" />
+        			<Directory Id="UwsgiTempFolder" Name="uwsgi_temp" />
+        			<Directory Id="ScgiTempFolder" Name="scgi_temp" />
+        		  </Directory>
+        		</Directory>
+        		<Directory Id="WwwRootFolder" Name="wwwroot">
+        		  <!-- Subdirectories will be dynamically added here -->
+        		</Directory>
+        		<Directory Id="LogsFolder" Name="logs" />
+        	  </Directory>
+        	</StandardDirectory>
+        
+        	<!-- Component for Go backend executable -->
+        	<Component Id="GoBackend" Directory="INSTALLFOLDER" Guid="87654321-4321-8765-2109-876543210987">
+        	  <File Id="ServerExe" Source="files/server.exe" KeyPath="yes" />
+        	</Component>
+        
+        	<!-- Component for NSSM service manager -->
+        	<Component Id="NSSMExecutable" Directory="INSTALLFOLDER" Guid="11111111-2222-3333-4444-555555555555">
+        	  <File Id="NSSMExe" Source="files/nssm.exe" KeyPath="yes" />
+        	</Component>
+        
+        	<!-- Component for Nginx executable -->
+        	<Component Id="NginxExecutable" Directory="NginxFolder" Guid="22222222-3333-4444-5555-666666666666">
+        	  <File Id="NginxExe" Source="files/nginx/nginx.exe" KeyPath="yes" />
+        	</Component>
+        
+        	<!-- Component for Nginx configuration -->
+        	<Component Id="NginxConfig" Directory="NginxConfFolder" Guid="33333333-4444-5555-6666-777777777777">
+        	  <File Id="NginxConf" Source="files/nginx/conf/nginx.conf" KeyPath="yes" />
+        	  <File Id="MimeTypes" Source="files/nginx/conf/mime.types" />
+        	</Component>
+        
+        	<!-- Component for Nginx directories -->
+        	<Component Id="NginxDirectories" Directory="NginxFolder" Guid="66666666-7777-8888-9999-000000000000">
+        	  <CreateFolder Directory="NginxLogsFolder" />
+        	  <CreateFolder Directory="ClientBodyTempFolder" />
+        	  <CreateFolder Directory="ProxyTempFolder" />
+        	  <CreateFolder Directory="FastcgiTempFolder" />
+        	  <CreateFolder Directory="UwsgiTempFolder" />
+        	  <CreateFolder Directory="ScgiTempFolder" />
+        	</Component>
+        
+        	<!-- Component for Logs directory -->
+        	<Component Id="LogsDirectory" Directory="LogsFolder" Guid="77777777-8888-9999-0000-111111111111">
+        	  <CreateFolder />
+        	</Component>
+        
+        	<!-- Frontend files placeholder -->
+        	<!-- FRONTEND_DIRECTORIES_PLACEHOLDER -->
+        	
+        	<!-- Frontend components placeholder -->
+        	<!-- FRONTEND_COMPONENTS_PLACEHOLDER -->
+        
+        	<!-- Service management scripts -->
+        	<Component Id="ServiceScripts" Directory="INSTALLFOLDER" Guid="44444444-5555-6666-7777-888888888888">
+        	  <File Id="InstallScript" Source="files/install_services.bat" KeyPath="yes" />
+        	  <File Id="UninstallScript" Source="files/uninstall_services.bat" />
+        	</Component>
+        	<!-- Custom Actions for Service Management -->
+        	<CustomAction Id="CustomRunInstallServicesBatch" 
+        				  Directory="INSTALLFOLDER"
+        				  ExeCommand='cmd.exe /c "cd /d &quot;[INSTALLFOLDER]&quot; &amp;&amp; install_services.bat &gt; logs\install_services.log 2&gt;&amp;1"'
+        				  Execute="deferred"
+        				  Impersonate="no"
+        				  Return="check" />
+        	
+        	<CustomAction Id="CustomRunUninstallServicesBatch" 
+        				  Directory="INSTALLFOLDER"
+        				  ExeCommand='cmd.exe /c "cd /d &quot;[INSTALLFOLDER]&quot; &amp;&amp; uninstall_services.bat &gt; logs\uninstall_services.log 2&gt;&amp;1"'
+        				  Execute="deferred"
+        				  Impersonate="no"
+        				  Return="check" />
+        	
+        	<!-- Install Sequence -->
+        	<InstallExecuteSequence>
+        	  <Custom Action="CustomRunInstallServicesBatch" After="InstallFiles" />
+        	  <Custom Action="CustomRunUninstallServicesBatch" Before="RemoveFiles" Condition="Installed AND NOT REINSTALL" />
+        	</InstallExecuteSequence>
+        
+        	<!-- Features -->
+        	<Feature Id="Complete" Level="1">
+        	  <ComponentRef Id="GoBackend" />
+        	  <ComponentRef Id="NSSMExecutable" />
+        	  <ComponentRef Id="NginxExecutable" />
+        	  <ComponentRef Id="NginxConfig" />
+        	  <ComponentRef Id="NginxDirectories" />
+        	  <ComponentRef Id="LogsDirectory" />
+        	  <!-- FRONTEND_COMPONENT_REFS_PLACEHOLDER -->
+        	  <ComponentRef Id="ServiceScripts" />
+        	</Feature>
+          </Package>
+        </Wix>
+        "@
+        $productWxs | Out-File -FilePath "wix/Product.wxs" -Encoding utf8
     - name: Generate frontend file components for WiX with proper directory structure
       run: |
         # Generate WiX components for all frontend files with proper directory structure
