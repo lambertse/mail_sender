@@ -62,39 +62,34 @@ func (h *SendMailHandler) SendEmail(w http.ResponseWriter, r *http.Request) {
 	var failedReceivers []model.Receiver
 
 	for idx, receiver := range mailReq.Data {
-		// err := sendEmail(from, mailToken, &receiver)
-		// if err != nil {
-		//           fmt.Println("Error: ", err.Error())
-		//          if strings.Contains(err.Error(), "Username and Password not accepted") {
-		//               log.Printf("Authentication error: %v", err)
-		//               http.Error(w, "Authentication error: Invalid email or mail token", http.StatusForbidden)
-		//               return
-		//          }
-		// 	retryCount := 0
-		// 	for retryCount < sendMailRetryCount {
-		// 		log.Printf("Retrying to send email to %s, attempt %d", receiver.Email, retryCount+1)
-		// 		err = sendEmail(from, mailToken, &receiver)
-		// 		if err == nil {
-		// 			log.Printf("Email sent successfully to %s", receiver.Email)
-		// 			break
-		// 		}
-		// 		retryCount++
-		// 	}
-		// 	if retryCount == sendMailRetryCount {
-		// 		log.Printf("Failed to send email to %s after %d attempts: %v", receiver.Email, sendMailRetryCount, err)
-		// 		failedReceivers = append(failedReceivers, receiver)
-		// 		continue
-		// 	}
-		// }
-		// if err == nil {
-		// 	log.Printf("Email sent successfully to %s", receiver.Email)
-		// 	successReceivers = append(successReceivers, receiver)
-		// }
-		if idx < 10 {
-			successReceivers = append(successReceivers, receiver)
-		} else {
-			failedReceivers = append(failedReceivers, receiver)
-		}
+		err := sendEmail(from, mailToken, &receiver)
+		if err != nil {
+		           fmt.Println("Error: ", err.Error())
+		          if strings.Contains(err.Error(), "Username and Password not accepted") {
+		               log.Printf("Authentication error: %v", err)
+		               http.Error(w, "Authentication error: Invalid email or mail token", http.StatusForbidden)
+		               return
+		          }
+		 	retryCount := 0
+		 	for retryCount < sendMailRetryCount {
+		 		log.Printf("Retrying to send email to %s, attempt %d", receiver.Email, retryCount+1)
+		 		err = sendEmail(from, mailToken, &receiver)
+		 		if err == nil {
+		 			log.Printf("Email sent successfully to %s", receiver.Email)
+		 			break
+		 		}
+		 		retryCount++
+		 	}
+		 	if retryCount == sendMailRetryCount {
+		 		log.Printf("Failed to send email to %s after %d attempts: %v", receiver.Email, sendMailRetryCount, err)
+		 		failedReceivers = append(failedReceivers, receiver)
+		 		continue
+		 	}
+		 }
+		 if err == nil {
+		 	log.Printf("Email sent successfully to %s", receiver.Email)
+		 	successReceivers = append(successReceivers, receiver)
+		 }
 	}
 
 	// Prepare response
