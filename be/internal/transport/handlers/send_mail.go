@@ -61,7 +61,7 @@ func (h *SendMailHandler) SendEmail(w http.ResponseWriter, r *http.Request) {
 	var successReceivers []model.Receiver
 	var failedReceivers []model.Receiver
 
-	for idx, receiver := range mailReq.Data {
+	for _, receiver := range mailReq.Data {
 		err := sendEmail(from, mailToken, &receiver)
 		if err != nil {
 		           fmt.Println("Error: ", err.Error())
