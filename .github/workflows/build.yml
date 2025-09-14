@@ -3,12 +3,11 @@
 
 name: Build
 
-#on:
-#  push:
-#    branches: [ "master", "ci-cd" ]
-#  pull_request:
-#    branches: [ "master", "ci-cd" ]
-on: push
+on:
+  push:
+    branches: [ "master", "ci-cd" ]
+  pull_request:
+    branches: [ "master", "ci-cd" ]
 
 jobs:
 
