@@ -248,6 +248,11 @@ jobs:
         path: wix/MailSender.msi
         retention-days: 30
 
+    - name: Debug wix folder
+      run: | 
+        Write-Host "Contents with wix folder"
+        Get-ChildItem -Path "wix" Recurse
+
     - name: Create Release (if tag)
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
