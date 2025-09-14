@@ -257,6 +257,7 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       with:
+        generate_release_notes: true
         files: wix/MailSender.msi
         name: Mail Sender ${{ github.ref_name }}
         body: |
