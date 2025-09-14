@@ -102,6 +102,8 @@ jobs:
         
         # Copy nginx configuration from static file
         Copy-Item -Path "build/ci/nginx.conf" -Destination "installer/nginx/conf/nginx.conf"
+        # Copy app icon
+        Copy-Item -Path "build/ci/app.ico" -Destination "installer/app.ico"
 
     - name: Install WiX Toolset
       run: |
